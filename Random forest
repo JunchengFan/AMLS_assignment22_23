@@ -1,45 +1,83 @@
-import requests
-import zipfile
-import io
-from PIL import Image
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+import sklearn
+import cv2
+from sklearn.model_selection import train_test_split
+from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
 
-# Download the dataset
-url = 'https://google.github.io/cartoonset/download.php?file=cartoonset100k.zip'
-r = requests.get(url)
-z = zipfile.ZipFile(io.BytesIO(r.content))
-z.extractall()
+
 
 # Load the dataset
-X = []
-y = []
-for i in range(1, 100001):
-    img = Image.open(f'cartoonset/{i}.png')
-    img = img.resize((64, 64))
-    img_arr = np.array(img)
-    X.append(img_arr)
-    if 'smiling' in f'cartoonset/{i}.png':
-        y.append(1) # smiling
-    else:
-        y.append(0) # not smiling
-X = np.array(X)
-y = np.array(y)
+
+images = []
+labels = []
+with open ('/Users/fanjuncheng/Desktop/dataset_AMLS_22-23/celeba/labels.csv') as f:
+    f.readline() #to skip the header
+    for line in f:
+        idx, name, label1, label2 = line.strip().split('\t')
+        image = cv2.imread('/Users/fanjuncheng/Desktop/dataset_AMLS_22-23/celeba/img/'+name) # images are read
+        image = cv2.resize(image, (150, 150))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        images.append(image)
+        if int(label1) == -1:   #-1 means female
+            labels.append(0) #Not male
+        else:
+            labels.append(1)
+        #print(name, labels)
+
+print(np.array(labels).shape)
+print(np.array(image).shape)
 
 # Split the data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=21)
+images_train, images_test, labels_train, labels_test = train_test_split(images, labels, test_size=0.2, random_state=21)
+
+#covert list to arrays
+X_train = np.array(images_train)
+X_test = np.array(images_test)
+y_train = np.array(labels_train)
+y_test = np.array(labels_test)
+
+X_train = np.array(images_train).reshape(len(images_train), -1)
+X_test = np.array(images_test).reshape(len(images_test), -1)
 
 # Create a random forest classifier
 clf = RandomForestClassifier(n_estimators=100, random_state=21)
 
 # Train the classifier on the training data
 clf.fit(X_train, y_train)
+print("training_acc=", clf.score(X_train, y_train))
 
 # Make predictions on the test data
-y_pred = clf.predict(X_test)
+labels_pred = clf.predict(X_test)
 
 # Calculate the accuracy of the predictions
-acc = accuracy_score(y_test, y_pred)
+acc = accuracy_score(y_test, labels_pred)
 print('Accuracy: ', acc)
+
+importances = clf.feature_importances_
+
+# Plot the feature importances
+import matplotlib.pyplot as plt
+
+plt.bar(range(X_train.shape[1]), importances)
+plt.xlabel("Feature Index")
+plt.ylabel("Feature Importance")
+plt.show()
+
+from sklearn.tree import export_graphviz
+from six import StringIO
+from IPython.display import Image
+import pydotplus
+
+dot_data = StringIO()
+export_graphviz(clf.estimators_[0], out_file=dot_data,
+                filled=True, rounded=True,
+                special_characters=True)
+graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+
+from PIL import Image
+img = Image.open(graph.write_png())
+img.show()
