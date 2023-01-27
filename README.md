@@ -10,3 +10,11 @@ This folder includes the major code of the four CNN models for the four tasks.
 6. Folders "Before the model" and "Random Forest" include some of the draft code - there are some bugs. Please refer to the code in "CNN_code_Main" and "RF_model-main". 
 
 7. I am sorry that the model files of the CNN models are too large to be allowed to upload, so these files do not show here. If you require them, please contact me at jf712@cam.ac.uk. 
+
+Requirements to run the code: 
+opencv==3.4.2
+scikit-learn==0.24.2
+numpy==1.19.2
+tensorflow-gpu==1.8.0
+keras==2.1.6
+matplotlib==3.3.4
